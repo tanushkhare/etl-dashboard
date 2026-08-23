@@ -1,9 +1,8 @@
 ﻿from pydantic import BaseModel, Field
-from typing import Optional
 
 class ETLRequest(BaseModel):
-    batch_size: int = Field(..., ge=10, le=100000, description="Number of stream records in batch")
-    target_sink: str = Field(..., description="Target database/lake sink (ClickHouse, PostgreSQL, S3)")
+    batch_size: int = Field(..., ge=100, le=100000, description="Batch record count")
+    target_sink: str = Field(..., description="Target database sink: ClickHouse, PostgreSQL, or S3")
 
 class ETLResponse(BaseModel):
     status: str

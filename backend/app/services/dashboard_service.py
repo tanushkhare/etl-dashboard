@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 class ETLPipelineEngine:
     def process_batch(self, batch_size: int, target_sink: str) -> Dict[str, Any]:
+        time.sleep(0.04)  # Simulate batch transformation compute
         throughput = int(batch_size / 0.18)
         bytes_written = round(batch_size * 0.42, 1)
         

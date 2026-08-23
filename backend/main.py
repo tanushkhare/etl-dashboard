@@ -20,8 +20,8 @@ app.add_middleware(
 app.include_router(dashboard.router)
 
 @app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "etl-dashboard", "engine": "FastAPI + ClickHouse/Postgres ETL"}
+async def health():
+    return {"status": "healthy", "service": "etl-dashboard"}
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
