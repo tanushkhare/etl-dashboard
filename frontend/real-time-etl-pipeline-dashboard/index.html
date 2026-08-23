@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Real-Time ETL Pipeline Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">⚡ Real-Time ETL Pipeline Dashboard</div>
+      <div class="badge">Live Microservice</div>
+    </div>
+  </header>
+  <main class="main-layout">
+    
+    <section class="panel-left">
+      <h2>Stream Ingestion & Batch Config</h2>
+      <p class="subtitle">Extract, transform, and validate high-throughput streaming batches into structured data lake sinks.</p>
+      <div class="input-group">
+        <label for="batchSize">Batch Size (Records)</label>
+        <select id="batchSize" class="text-input">
+          <option value="500">500 Records / Frame</option>
+          <option value="2500" selected>2,500 Records / Frame</option>
+          <option value="10000">10,000 Records / Frame</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label for="sinkTarget">Target Storage Sink</label>
+        <select id="sinkTarget" class="text-input">
+          <option value="PostgreSQL">PostgreSQL Lakehouse</option>
+          <option value="ClickHouse" selected>ClickHouse Columnar Storage</option>
+          <option value="S3">Amazon S3 Parquet</option>
+        </select>
+      </div>
+      <button class="btn primary-btn" onclick="triggerETL()">Execute Batch Ingestion & Transform</button>
+      <div class="log-card">
+        <h4>ETL Orchestrator Telemetry</h4>
+        <div id="logBox" class="terminal-log">Pipeline standing by for trigger...</div>
+      </div>
+    </section>
+    <aside class="panel-right">
+      <h2>Pipeline Diagnostics</h2>
+      <div class="metric-row">
+        <div class="metric-card"><span class="label">Ingestion Throughput</span><span class="value" id="throughput">-- rps</span></div>
+        <div class="metric-card"><span class="label">Data Quality Pass</span><span class="value" id="qualityScore" style="color:#34d399;">--%</span></div>
+      </div>
+      <div class="card">
+        <h3>Transform & Normalization Status</h3>
+        <p style="font-size:0.85rem; color:#94a3b8; line-height:1.6;">
+          Schema Validation: <code id="schemaStatus" style="color:#34d399;">Strict Enforced</code><br>
+          Dropped Corrupt Records: <code id="droppedRecords">0</code><br>
+          Transform Latency (p99): <code id="latencyMetric">-- ms</code>
+        </p>
+      </div>
+      <div class="card">
+        <h3>Active Sink Telemetry</h3>
+        <ul id="sinkTelemetry"><li>Awaiting pipeline execution batch...</li></ul>
+      </div>
+    </aside>
+    
+  </main>
+  <script>
+    async function triggerETL() {
+      const batchSize = parseInt(document.getElementById('batchSize').value, 10);
+      const sink = document.getElementById('sinkTarget').value;
+      const log = document.getElementById('logBox');
+
+      log.innerText = `[${new Date().toLocaleTimeString()}] Ingesting batch (${batchSize} records)\n[${new Date().toLocaleTimeString()}] Normalizing schemas & casting timestamps...\n[${new Date().toLocaleTimeString()}] Querying endpoint: /api/v1/etl/process`;
+
+      try {
+        const res = await fetch("http://127.0.0.1:8000/api/v1/etl/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ batch_size: batchSize, target_sink: sink })
+        });
+
+        if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+
+        const data = await res.json();
+        document.getElementById('throughput').innerText = `${data.throughput_rps} rps`;
+        document.getElementById('qualityScore').innerText = `${data.quality_score}%`;
+        document.getElementById('droppedRecords').innerText = data.dropped_records;
+        document.getElementById('latencyMetric').innerText = `${data.latency_ms} ms`;
+        document.getElementById('sinkTelemetry').innerHTML = `
+          <li>Committed to ${sink} partition: <code>${data.partition_key}</code></li>
+          <li>Bytes written: <code>${data.bytes_written_kb} KB</code></li>
+        `;
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] 200 OK: Batch successfully written to ${sink}.`;
+      } catch (err) {
+        log.innerText += `\n[${new Date().toLocaleTimeString()}] Note: Backend server offline. Running simulation fallback.\nDetails: ${err.message}`;
+        const simulatedThroughput = Math.round(batchSize / 0.18);
+        document.getElementById('throughput').innerText = `${simulatedThroughput.toLocaleString()} rps`;
+        document.getElementById('qualityScore').innerText = "99.8%";
+        document.getElementById('droppedRecords').innerText = "2 (Schema Cast Error)";
+        document.getElementById('latencyMetric').innerText = "14.2 ms";
+        document.getElementById('sinkTelemetry').innerHTML = `
+          <li>Committed to ${sink} partition: <code>part_2026_batch_01</code></li>
+          <li>Bytes written: <code>${(batchSize * 0.42).toFixed(1)} KB</code></li>
+        `;
+      }
+    }
+    </script>
+</body>
+</html>
