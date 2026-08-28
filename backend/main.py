@@ -1,11 +1,11 @@
 ﻿from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.app.routers import dashboard
+from backend.app.routers import etl_router
 import uvicorn
 
 app = FastAPI(
-    title="Real-Time ETL Pipeline Microservice",
-    description="High-throughput batch stream ingestion, schema normalization, and storage sink router.",
+    title="Real-Time ETL & Stream Processing API",
+    description="High-throughput batch aggregation, schema normalization, and stream telemetry sink.",
     version="1.0.0"
 )
 
@@ -17,10 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(dashboard.router)
+app.include_router(etl_router.router)
 
 @app.get("/health")
-async def health():
+async def health_check():
     return {"status": "healthy", "service": "etl-dashboard"}
 
 if __name__ == "__main__":
